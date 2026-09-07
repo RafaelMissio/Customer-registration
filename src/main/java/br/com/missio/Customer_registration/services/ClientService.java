@@ -4,6 +4,7 @@ import br.com.missio.Customer_registration.dto.ClientDTO;
 import br.com.missio.Customer_registration.entities.Client;
 import br.com.missio.Customer_registration.repositories.ClientRepository;
 import br.com.missio.Customer_registration.services.exceptions.ResourceNotFoundException;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -13,17 +14,20 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ClientService {
 
-    private ClientRepository clientRepository;
+    private final ClientRepository clientRepository;
+    private final ModelMapper modelMapper;
 
-    public ClientService(ClientRepository clientRepository) {
+    public ClientService(ClientRepository clientRepository, ModelMapper modelMapper) {
         this.clientRepository = clientRepository;
+        this.modelMapper = modelMapper;
     }
 
     @Transactional
-    public void saveClient(ClientDTO dto) {
+    public ClientDTO create(ClientDTO dto) {
         Client entity = new Client();
-        copyDtoToEntity(dto, entity);
-        clientRepository.save(entity);
+        modelMapper.map(dto, entity);
+        entity = clientRepository.save(entity);
+        return new ClientDTO(entity);
     }
 
     @Transactional(readOnly = true)
@@ -43,8 +47,9 @@ public class ClientService {
     @Transactional
     public ClientDTO update(Long id, ClientDTO dto) {
         Client entity = clientRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Client not found with id: "));
-        copyDtoToEntity(dto, entity);
+                .orElseThrow(() -> new ResourceNotFoundException("Client not found with id: " + id));
+        modelMapper.getConfiguration().setSkipNullEnabled(true);
+        modelMapper.map(dto, entity);
         entity = clientRepository.save(entity);
         return new ClientDTO(entity);
 
@@ -53,21 +58,14 @@ public class ClientService {
     @Transactional(propagation = Propagation.SUPPORTS)
     public void delete(Long id) {
         if (!clientRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Client not found with id: ");
+            throw new ResourceNotFoundException("Client not found with id: " + id);
         }
         clientRepository.deleteById(id);
     }
 
 
 
-    // metodo para converter o DTO para a entidade Client
-    private void copyDtoToEntity(ClientDTO dto, Client entity) {
-        entity.setName(dto.getName());
-        entity.setCpf(dto.getCpf());
-        entity.setIncome(dto.getIncome());
-        entity.setBirthDate(dto.getBirthDate());
-        entity.setChildren(dto.getChildren());
-    }
+
 
 
 
