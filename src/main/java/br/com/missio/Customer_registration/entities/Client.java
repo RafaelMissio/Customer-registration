@@ -18,7 +18,7 @@ public class Client {
     private LocalDate birthDate;
     private Integer children;
 
-    protected Client() {
+    public Client() {
 
     }
 
